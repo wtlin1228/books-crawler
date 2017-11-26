@@ -1,6 +1,7 @@
 import requests
 import string
 from bs4 import BeautifulSoup
+import csv
 
 TENLONG_URL = 'https://www.tenlong.com.tw/search'
 BOOKS_URL = 'http://search.books.com.tw/search/query/key/<keyword>/cat/BKA'
@@ -84,6 +85,16 @@ def find_the_same_book(dom, target_book):
     
     return {None}
 
+def output_to_csv(csvCursor, data, category):
+    for entry in data:
+        if entry[1] != {None}:
+            csvCursor.writerow([
+                category, 
+                entry[0]['title'], 
+                entry[0]['author'],
+                entry[0]['price'],
+                entry[1]['price']
+            ])
 
 def crawl_topic(topic):
     page = get_tenlong_page(TENLONG_URL, topic)
@@ -102,6 +113,15 @@ def crawl_topic(topic):
 
 if __name__ == '__main__':
     # add keyword you want to search here
-    keywords = ['python', 'react', 'deep learning']
+    keywords = ['Python', 'C', 'Java', 'C++', 'C#', 'R', 'JavaScript', 'PHP', 'Go', 'Swift']
+    
+    file = open('./result.csv', 'w')
+    csvCursor = csv.writer(file)
+    csvHeader = ['category', 'title', 'author', 'tenlong', 'books']
+    csvCursor.writerow(csvHeader)
+
     for keyword in keywords:
-        print(crawl_topic(keyword))
+        result = crawl_topic(keyword)
+        output_to_csv(csvCursor, result, keyword)
+
+    file.close()
