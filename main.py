@@ -2,25 +2,27 @@ import requests
 import string
 from bs4 import BeautifulSoup
 import csv
+import pprint
 
 TENLONG_URL = 'https://www.tenlong.com.tw/search'
 BOOKS_URL = 'http://search.books.com.tw/search/query/key/<keyword>/cat/BKA'
 
 
 # clear the punctuation for string
-def strclear(text,newsign=''):
+def strclear(text, newsign=''):
     signtext = string.punctuation + ' ' + '｜' + '、' + '：' + '－' + newsign
-    signrepl = '@'*len(signtext)
-    signtable = str.maketrans(signtext,signrepl)
-    return text.translate(signtable).replace('@','')
+    signrepl = '@' * len(signtext)
+    signtable = str.maketrans(signtext, signrepl)
+    return text.translate(signtable).replace('@', '')
 
 
 # search tenlong.com.tw by keyword
-def get_tenlong_page(url, keyword):
+def get_tenlong_page(url, keyword, page_number):
     params = {
         'utf8': '%E2%9C%93',
         'authenticity_token': 'Tj68PmOdiG8LxEXu%2F%2FFvGJASIBgeIsP5t4ZMdUpq6%2B3lgIm3hqNz5AQmfDh7Nyf0ygtn1WEPgtZL3uI8samp7w%3D%3D',
         'keyword': keyword,
+        'page': page_number,
         'top-search-btn': None
     }
 
@@ -34,6 +36,7 @@ def get_tenlong_page(url, keyword):
         print('Invalid url:', resp.url)
         return None
     else:
+        pprint.pprint(resp.text)
         return resp.text
 
 
@@ -47,7 +50,8 @@ def get_book_list(dom):
         title = book.h3.text.split('(')[0].strip()
         title = strclear(title)
         author = book.find('span', {'class': 'author'}).text.strip()
-        price = book.find('span', {'class': 'price'}).text.split('$')[1].strip()
+        price = book.find('span', {'class': 'price'}
+                          ).text.split('$')[1].strip()
 
         result.append([{'title': title, 'author': author, 'price': price}])
 
@@ -82,22 +86,24 @@ def find_the_same_book(dom, target_book):
         if title == target_book:
             print('find it')
             return {'title': title, 'author': author, 'price': price}
-    
+
     return {None}
+
 
 def output_to_csv(csvCursor, data, category):
     for entry in data:
         if entry[1] != {None}:
             csvCursor.writerow([
-                category, 
-                entry[0]['title'], 
+                category,
+                entry[0]['title'],
                 entry[0]['author'],
                 entry[0]['price'],
                 entry[1]['price']
             ])
 
-def crawl_topic(topic):
-    page = get_tenlong_page(TENLONG_URL, topic)
+
+def crawl_topic(topic, page_number):
+    page = get_tenlong_page(TENLONG_URL, topic, page_number)
     if page:
         book_list = get_book_list(page)
 
@@ -107,21 +113,25 @@ def crawl_topic(topic):
             book.append(find_the_same_book(page, book[0]['title']))
         else:
             book.append({None})
-    
+
     return book_list
 
 
 if __name__ == '__main__':
     # add keyword you want to search here
-    keywords = ['Python', 'C', 'Java', 'C++', 'C#', 'R', 'JavaScript', 'PHP', 'Go', 'Swift']
-    
+    keywords = ['C#',
+                'R', 'JavaScript', 'PHP', 'Go', 'Swift']
+
+    # keywords = ['Python']
+
     file = open('./result.csv', 'w')
     csvCursor = csv.writer(file)
     csvHeader = ['category', 'title', 'author', 'tenlong', 'books']
     csvCursor.writerow(csvHeader)
 
     for keyword in keywords:
-        result = crawl_topic(keyword)
-        output_to_csv(csvCursor, result, keyword)
+        for i in range(4):
+            result = crawl_topic(keyword, i+1)
+            output_to_csv(csvCursor, result, keyword)
 
     file.close()
