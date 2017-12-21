@@ -36,7 +36,6 @@ def get_tenlong_page(url, keyword, page_number):
         print('Invalid url:', resp.url)
         return None
     else:
-        pprint.pprint(resp.text)
         return resp.text
 
 
@@ -119,10 +118,8 @@ def crawl_topic(topic, page_number):
 
 if __name__ == '__main__':
     # add keyword you want to search here
-    keywords = ['C#',
+    keywords = ['Python', 'C', 'Java', 'C++', 'C#',
                 'R', 'JavaScript', 'PHP', 'Go', 'Swift']
-
-    # keywords = ['Python']
 
     file = open('./result.csv', 'w')
     csvCursor = csv.writer(file)
